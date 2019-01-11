@@ -1,0 +1,111 @@
+---
+title: "ESM 244 Lab 1"
+author: "Tom Paschos"
+date: "1/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Objectives
+- basic review
+- intro to spatial data in R with sf
+- intro to shiny apps 
+
+1. Attach packages 
+
+```{r packages}
+
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(tmap)
+
+```
+
+2. Review: reading, exploring, wrangling and visualizing data
+
+a. Read in the data
+
+```{r}
+
+wine_data <- read_csv("wine_data.csv")
+View(wine_data)
+
+wine <- read_csv("wine_data.csv")
+
+```
+
+b. wrangling
+
+```{r}
+
+# pipe operator = "and then" (Command + Shift + M)
+# select = columns, filter = rows
+# double == looks for a match, one = sets something new
+# OR is vert line above return key
+
+wine_new <- wine %>% 
+  select(country, province, winery, region_1, points, price) %>% 
+  rename(state = province) %>% 
+  filter(state == "California" | state == "Oregon" | state == "Washington") %>% 
+  mutate(ppd = points/price) %>% 
+  arrange(-ppd)
+
+```
+
+c. Use group_by() and summarize () to find summary statistics by group
+
+```{r}
+
+# group_by can group by more than one variable
+# This with summary is a great combo for data exploration
+
+wine_summary <- wine_new %>% 
+  group_by(state) %>% 
+  summarize(
+    mean_ppd = mean(ppd, na.rm = TRUE),
+    max_ppd = max(ppd, na.rm = TRUE) # na.rm = TRUE ignores NA values
+  )
+
+```
+
+
+d. A few gg-graphics
+
+```{r}
+
+# ggplot needs 3 things: 1. say we're using ggplot 2. what our data is (and x and y variables), 3. what type of graph
+# Piping and adding levels of a gg-graph are different things.  Use a + sign to add additional levels
+# Looking at data separately by group, we can use facet wrap
+# scales=free will make the scales different, which is harder to compare data with different scales, but that's okay
+
+wine_hists <- ggplot(wine_new, aes(x = ppd)) +
+  geom_histogram(aes(fill = state)) +
+  facet_wrap(~state, scales = "free")
+
+wine_hists
+
+```
+
+New Graph: scatterplot graph of price vs. points, with color determined by state, adding a linear model trendline on top of it.
+
+```{r}
+
+# If you don't reference a variable put it outside aes
+
+wine_points <- ggplot(wine_new, aes(x=price, y=points)) +
+  geom_point(aes(color = state), alpha = 0.5) +
+  geom_smooth(color = "black", method = "lm", se = FALSE) + #adds a trendline
+  scale_color_manual(values = c("royalblue", "mediumorchid1","orange")) +
+  facet_wrap(~state) +
+  theme_light()
+
+wine_points
+
+```
+
+
+
